@@ -142,8 +142,10 @@ class Tank:
         self.health -= damage
 
     # Distance function
-    def distance(self, coord1: tuple[int, int], coord2: tuple[int, int]) -> tuple[int, int]:
-        return math.sqrt((coord1[0] - coord2[0]) * (coord1[0] - coord2[0]) + (coord1[1] - coord2[1]) * (coord1[1] - coord2[1]))
+    def distance(self, coord1: tuple[int, int], coord2: tuple[int, int]) -> float:
+        # Use math.dist instead of manual sqrt for a performance improvement
+        # See .jules/bolt.md - math.dist is ~2.5x faster
+        return math.dist(coord1, coord2)
 
     def set_tank_name(self, name) -> "Tank":
         """Sets tank's name"""
