@@ -144,7 +144,6 @@ class Tank:
     # Distance function
     def distance(self, coord1: tuple[int, int], coord2: tuple[int, int]) -> float:
         # Use math.dist instead of manual sqrt for a performance improvement
-        # See .jules/bolt.md - math.dist is ~2.5x faster
         return math.dist(coord1, coord2)
 
     def set_tank_name(self, name) -> "Tank":
