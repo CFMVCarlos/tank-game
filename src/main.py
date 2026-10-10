@@ -7,12 +7,12 @@ import sys
 import pygame
 
 import colors
-from multicast_transceiver import createReceiverSocket, createSenderSocket, sendMessage
-from sprites import BulletSprite, TankSprite, TerrainSprite
+from .multicast_transceiver import createReceiverSocket, createSenderSocket, sendMessage
+from .sprites import BulletSprite, TankSprite, TerrainSprite
 
 # Local imports
-from tank import Tank, Tank_Spawner
-from terrain import Terrain
+from .tank import Tank, Tank_Spawner
+from .terrain import Terrain
 
 FRAMES: int = 0
 FRAME_LIMIT: int = 60
@@ -49,8 +49,14 @@ def check_off_limits(gameWidth: int, rect_centerx: int) -> bool:
     return rect_centerx > gameWidth or rect_centerx < 0
 
 
-def bullet_hit_animation(start_animation: bool, screen: pygame.Surface, sound: pygame.mixer.Sound, image: pygame.Surface, position: tuple[int, int]):
-    """Plays bullet hit animation and sound"""
+def bullet_hit_animation(
+    start_animation: bool,
+    screen: pygame.Surface,
+    sound: pygame.mixer.Sound,
+    image: pygame.Surface,
+    position: tuple[int, int],
+) -> bool:
+    """Plays bullet hit animation and sound."""
     global FRAMES, FRAME_LIMIT, SOUND_PLAYED_ONCE
     if not start_animation:
         return False
@@ -73,21 +79,29 @@ def bullet_hit_animation(start_animation: bool, screen: pygame.Surface, sound: p
     return False
 
 
-def main(WIDTH, HEIGHT, SCALE) -> None:
+def main(WIDTH: int, HEIGHT: int, SCALE: int) -> bool:
     # Create the window
     screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE))
     # Set the title of the window
     pygame.display.set_caption("Tanks Game")
     # Load background image
     background_image: pygame.Surface = pygame.image.load("images/sky_background.png")
-    background_image_offset = random.randint(0, background_image.get_size()[0] - WIDTH * SCALE)
-    background_image = pygame.transform.scale(background_image, (background_image.get_width(), HEIGHT * (SCALE + 1)))
+    background_image_offset = random.randint(
+        0,
+        background_image.get_size()[0] - WIDTH * SCALE,
+    )
+    background_image = pygame.transform.scale(
+        background_image,
+        (background_image.get_width(), HEIGHT * (SCALE + 1)),
+    )
     # Set the key repeat delay and interval
     pygame.key.set_repeat(50, 50)
     # Load explosion sound
     explosion_sound: pygame.mixer.Sound = pygame.mixer.Sound("images/explosion.wav")
     # Load explosion image
-    explosion_image: pygame.Surface = pygame.image.load("images/explosion.png").convert_alpha()
+    explosion_image: pygame.Surface = pygame.image.load(
+        "images/explosion.png",
+    ).convert_alpha()
     explosion_image = pygame.transform.scale(explosion_image, (2 * SCALE, 2 * SCALE))
     # Create a Pygame clock to control the frame rate
     clock: pygame.time.Clock = pygame.time.Clock()
@@ -97,22 +111,34 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
     tank_base = Tank((-10, -10), controls=1)
     tank1_sprite: TankSprite = TankSprite(TankSpawner.spawn_tank(tank_base), SCALE)
     tank2_sprite: TankSprite = TankSprite(TankSpawner.spawn_tank(tank_base), SCALE)
-    tank1_sprite.tank.set_pos((WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4))\
-        .set_controls(1)\
-        .set_tank_name(USERNAME)
-    tank2_sprite.tank.set_pos((3 * WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4))\
-        .set_controls(2)\
-        .set_tank_name("Tank 2")
+    tank1_sprite.tank.set_pos((WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4)).set_controls(
+        1,
+    ).set_tank_name(USERNAME)
+    tank2_sprite.tank.set_pos(
+        (
+            3 * WIDTH * SCALE / 4,
+            3 * HEIGHT * SCALE / 4,
+        )
+    ).set_controls(2).set_tank_name("Tank 2")
     tank1_sprite.update_center_pos()
     tank2_sprite.update_center_pos()
     # Create terrain for tanks to move
-    terrain_sprite = TerrainSprite(Terrain(WIDTH, HEIGHT, SCALE, colors.GREEN, tank1_sprite.get_bottom_pos()), SCALE)
+    terrain_sprite = TerrainSprite(
+        Terrain(WIDTH, HEIGHT, SCALE, colors.GREEN, tank1_sprite.get_bottom_pos()),
+        SCALE,
+    )
     # Create bullet sprites for tanks
     bullet1_sprite: BulletSprite = BulletSprite(tank1_sprite.tank.bullet, SCALE)
     bullet2_sprite: BulletSprite = BulletSprite(tank2_sprite.tank.bullet, SCALE)
     # Add all sprites to a group of sprites
     all_sprites = pygame.sprite.Group()
-    all_sprites.add(bullet1_sprite, bullet2_sprite, tank1_sprite, tank2_sprite, terrain_sprite)
+    all_sprites.add(
+        bullet1_sprite,
+        bullet2_sprite,
+        tank1_sprite,
+        tank2_sprite,
+        terrain_sprite,
+    )
 
     # Establish first frame positions
     tank1_sprite.update()
@@ -159,7 +185,6 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
     GAME_START: bool = False  # variable to check if the game has started
     SYNC_COMPLETE: bool = False  # variable to check if the synchronization is complete
     while running:
-
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -176,7 +201,17 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 # If this is the first iteration of the loop
                 if count == 0:
                     # Send a message to the sender socket indicating the user is waiting and working
-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "waiting", "status2": "working"}))
+                    sendMessage(
+                        senderSocket,
+                        pickle.dumps(
+                            {
+                                "user": USERNAME,
+                                "id": USER_ID,
+                                "status": "waiting",
+                                "status2": "working",
+                            }
+                        ),
+                    )
                     # Reset the count
                     count = FRAME_LIMIT
                 # Decrement the count
@@ -192,7 +227,17 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 # If this is the first iteration of the loop
                 if count == 0:
                     # Send a message to the sender socket indicating the user is ready and the current player
-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
+                    sendMessage(
+                        senderSocket,
+                        pickle.dumps(
+                            {
+                                "user": USERNAME,
+                                "id": USER_ID,
+                                "status": "ready",
+                                "current_player": current_player,
+                            }
+                        ),
+                    )
                     # Reset the count
                     count = FRAME_LIMIT
                 # Decrement the count
@@ -202,7 +247,16 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 # If this is the first iteration of the loop
                 if count == 0:
                     # Send a message to the sender socket indicating the user is syncing
-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "sync"}))
+                    sendMessage(
+                        senderSocket,
+                        pickle.dumps(
+                            {
+                                "user": USERNAME,
+                                "id": USER_ID,
+                                "status": "sync",
+                            }
+                        ),
+                    )
                     # Reset the count
                     count = FRAME_LIMIT
                 # Decrement the count
@@ -239,19 +293,19 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 # Initialize the input keys list to all False
                 input_keys = [False] * 512
                 # Receive a message from the receiver socket
-                if (msg := receiverSocket.recvfrom(8192)):
+                if msg := receiverSocket.recvfrom(8192):
                     # Deserialize the message and store it in the userCommand dictionary
                     userCommand: dict = pickle.loads(msg[0])
                     # Get the ID of the user who sent the message
                     mc_user_id = userCommand.get("id")
                     # If the ID does not match the current user's ID
-                    if (mc_user_id != USER_ID):
+                    if mc_user_id != USER_ID:
                         # If the message includes a status field
                         if mc_user_status := userCommand.get("status"):
                             # If the status is "waiting" and sync has not yet been completed
                             if mc_user_status == "waiting" and (not SYNC_COMPLETE):
                                 # Set the PLAYER flag based on the ID comparison
-                                PLAYER = (mc_user_id > USER_ID)
+                                PLAYER = mc_user_id > USER_ID
                                 # Store the other player's ID
                                 OTHER_PLAYER_ID = mc_user_id
                                 # Store the other player's name
@@ -259,7 +313,16 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                                 # Set the GAME_STARTING flag
                                 GAME_STARTING = True
                                 # Send a message to the sender socket indicating the user is waiting
-                                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "waiting"}))
+                                sendMessage(
+                                    senderSocket,
+                                    pickle.dumps(
+                                        {
+                                            "user": USERNAME,
+                                            "id": USER_ID,
+                                            "status": "waiting",
+                                        }
+                                    ),
+                                )
                     # If the ID of the user who sent the message matches the other player's ID
                     if mc_user_id == OTHER_PLAYER_ID:
                         # If the message includes a status field
@@ -275,20 +338,49 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                                 # Reset the ready_flag flag
                                 ready_flag = False
                                 # Send a message to the sender socket indicating the user is ready and the current player
-                                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
+                                sendMessage(
+                                    senderSocket,
+                                    pickle.dumps(
+                                        {
+                                            "user": USERNAME,
+                                            "id": USER_ID,
+                                            "status": "ready",
+                                            "current_player": current_player,
+                                        }
+                                    ),
+                                )
                             # If the status is "sync" and sync has not yet been completed
                             elif (mc_user_status == "sync") and (not SYNC_COMPLETE):
                                 # If the game has not yet started
-                                if (not GAME_START):
+                                if not GAME_START:
                                     # Send a message to the sender socket indicating the user is ready and the current player
-                                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
+                                    sendMessage(
+                                        senderSocket,
+                                        pickle.dumps(
+                                            {
+                                                "user": USERNAME,
+                                                "id": USER_ID,
+                                                "status": "ready",
+                                                "current_player": current_player,
+                                            }
+                                        ),
+                                    )
                                 else:
                                     # Set the SYNC_COMPLETE flag
                                     SYNC_COMPLETE = True
                                     # Send a message to the sender socket indicating the user is ready to sync
-                                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "sync"}))
+                                    sendMessage(
+                                        senderSocket,
+                                        pickle.dumps(
+                                            {
+                                                "user": USERNAME,
+                                                "id": USER_ID,
+                                                "status": "sync",
+                                            }
+                                        ),
+                                    )
                         # If the message includes a 'keys' field
-                        elif (mc_user_keys := userCommand.get("keys")):
+                        elif mc_user_keys := userCommand.get("keys"):
                             # Update the input keys list with the keys sent by the other player
                             input_keys: list[int] = mc_user_keys
             except BlockingIOError:
@@ -314,9 +406,14 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
         # Retrieve all keys that are being pressed
         keys_pressed: pygame.key.ScancodeWrapper = pygame.key.get_pressed()
         if LAN_GAME:
-            keys: pygame.key.ScancodeWrapper = pygame.key.ScancodeWrapper([a or b for a, b in zip(keys_pressed, input_keys)])
+            keys: pygame.key.ScancodeWrapper = pygame.key.ScancodeWrapper(
+                [a or b for a, b in zip(keys_pressed, input_keys, strict=False)]
+            )
             if any(keys_pressed):
-                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "keys": keys}))
+                sendMessage(
+                    senderSocket,
+                    pickle.dumps({"user": USERNAME, "id": USER_ID, "keys": keys}),
+                )
         else:
             keys = keys_pressed
 
@@ -342,8 +439,12 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
             # Bullet explosion animation
             bullet_1_explosion = True
             # Set bullet 2 hit position
-            bullet1_sprite.bullet.set_bullet_hit_position(pos=intersection(bullet1_sprite.rect.bottomleft + bullet1_sprite.bullet.last_pos,
-                                                                           terrain_sprite.rect.topleft + terrain_sprite.rect.topright))
+            bullet1_sprite.bullet.set_bullet_hit_position(
+                pos=intersection(
+                    bullet1_sprite.rect.bottomleft + bullet1_sprite.bullet.last_pos,
+                    terrain_sprite.rect.topleft + terrain_sprite.rect.topright,
+                ),
+            )
 
             # Check if bullet2 is off the limits of the screen
         if check_off_limits(WIDTH * SCALE, bullet2_sprite.rect.centerx):
@@ -367,8 +468,12 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
             # Bullet explosion animation
             bullet_2_explosion = True
             # Set bullet 2 hit position
-            bullet2_sprite.bullet.set_bullet_hit_position(pos=intersection(bullet2_sprite.rect.bottomleft + bullet2_sprite.bullet.last_pos,
-                                                                           terrain_sprite.rect.topleft + terrain_sprite.rect.topright))
+            bullet2_sprite.bullet.set_bullet_hit_position(
+                pos=intersection(
+                    bullet2_sprite.rect.bottomleft + bullet2_sprite.bullet.last_pos,
+                    terrain_sprite.rect.topleft + terrain_sprite.rect.topright,
+                ),
+            )
 
             # Switch players
         if not tank1_sprite.tank.current_player and current_player == 1:
@@ -400,13 +505,33 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
 
         # Draw preview lines for tank's bullets
         if current_player == 1 and not game_over:
-            pygame.draw.line(screen, colors.BLACK, tank1_sprite.rect.center, (
-                tank1_sprite.rect.center[0] + tank1_sprite.tank.bullet_power * math.cos(tank1_sprite.tank.bullet_angle),
-                tank1_sprite.rect.center[1] + tank1_sprite.tank.bullet_power * math.sin(tank1_sprite.tank.bullet_angle)))
+            pygame.draw.line(
+                screen,
+                colors.BLACK,
+                tank1_sprite.rect.center,
+                (
+                    tank1_sprite.rect.center[0]
+                    + tank1_sprite.tank.bullet_power
+                    * math.cos(tank1_sprite.tank.bullet_angle),
+                    tank1_sprite.rect.center[1]
+                    + tank1_sprite.tank.bullet_power
+                    * math.sin(tank1_sprite.tank.bullet_angle),
+                ),
+            )
         elif current_player == 2 and not game_over:
-            pygame.draw.line(screen, colors.BLACK, tank2_sprite.rect.center, (
-                tank2_sprite.rect.center[0] + tank2_sprite.tank.bullet_power * math.cos(tank2_sprite.tank.bullet_angle),
-                tank2_sprite.rect.center[1] + tank2_sprite.tank.bullet_power * math.sin(tank2_sprite.tank.bullet_angle)))
+            pygame.draw.line(
+                screen,
+                colors.BLACK,
+                tank2_sprite.rect.center,
+                (
+                    tank2_sprite.rect.center[0]
+                    + tank2_sprite.tank.bullet_power
+                    * math.cos(tank2_sprite.tank.bullet_angle),
+                    tank2_sprite.rect.center[1]
+                    + tank2_sprite.tank.bullet_power
+                    * math.sin(tank2_sprite.tank.bullet_angle),
+                ),
+            )
 
         # Draw tank1's name
         tank1_sprite.draw_name(screen)
@@ -418,10 +543,22 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
         # Draw tank2's health
         tank2_sprite.draw_health(screen)
 
-        if bullet_hit_animation(bullet_1_explosion, screen, explosion_sound, explosion_image, bullet1_sprite.bullet.bullet_hit_position):
+        if bullet_hit_animation(
+            bullet_1_explosion,
+            screen,
+            explosion_sound,
+            explosion_image,
+            bullet1_sprite.bullet.bullet_hit_position,
+        ):
             # If bullet 1 explosion animation has ended
             bullet_1_explosion = False
-        if bullet_hit_animation(bullet_2_explosion, screen, explosion_sound, explosion_image, bullet2_sprite.bullet.bullet_hit_position):
+        if bullet_hit_animation(
+            bullet_2_explosion,
+            screen,
+            explosion_sound,
+            explosion_image,
+            bullet2_sprite.bullet.bullet_hit_position,
+        ):
             # If bullet 2 explosion animation has ended
             bullet_2_explosion = False
 
@@ -430,10 +567,7 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 # If the game is over, determine the winner based on the value of game_winner
                 if not PLAYER:
                     # If the current player is not the user, set player_winner to the other player's name
-                    if game_winner == 1:
-                        player_winner = OTHER_PLAYER_NAME
-                    else:
-                        player_winner = USERNAME
+                    player_winner = OTHER_PLAYER_NAME if game_winner == 1 else USERNAME
                 # If the current player is the user, set player_winner to the user's name
                 elif game_winner == 1:
                     player_winner = USERNAME
@@ -448,15 +582,15 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
                 text_rect2 = text2.get_rect()
                 # Set the rectangles to be centered on the screen
                 text_rect.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2)
-                text_rect2.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2 + text_rect.height)
+                text_rect2.center = (
+                    WIDTH * SCALE // 2,
+                    HEIGHT * SCALE // 2 + text_rect.height,
+                )
                 # Blit the text surfaces to the screen
                 screen.blit(text, text_rect)
                 screen.blit(text2, text_rect2)
             else:
-                if game_winner == 1:
-                    player_winner = USERNAME
-                else:
-                    player_winner = OTHER_PLAYER_NAME
+                player_winner = USERNAME if game_winner == 1 else OTHER_PLAYER_NAME
                 text = font.render(f"Player {player_winner} Won", True, colors.BLACK)
                 text_rect = text.get_rect()
                 text_rect.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2)

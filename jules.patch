@@ -1,0 +1,1103 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 81e702f..2212774 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -70,6 +70,7 @@ pretty = true
+ minversion = "9.0"
+ addopts = "-ra -q -n auto"
+ testpaths = ["tests"]
++pythonpath = ["."]
+ 
+ [tool.coverage]
+ run.branch = true
+diff --git a/src/__init__.py b/src/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/bullet.py b/src/bullet.py
+similarity index 75%
+rename from bullet.py
+rename to src/bullet.py
+index bfa76a6..52061ee 100644
+--- a/bullet.py
++++ b/src/bullet.py
+@@ -25,8 +25,13 @@ class Bullet:
+         # Set initial velocity
+         self.velocity: tuple[float, float] = (0, 0)
+ 
+-    def shoot(self, pos: tuple[int, int], angle: float = -math.pi / 4, power: float = 50) -> None:
+-        """Function to reset bullets parameters to be ready to be shot"""
++    def shoot(
++        self,
++        pos: tuple[int, int],
++        angle: float = -math.pi / 4,
++        power: float = 50,
++    ) -> None:
++        """Function to reset bullets parameters to be ready to be shot."""
+         # Redefine bullet to position to tank's position
+         self.pos = pos
+         # Redefine bullet last position to tank's position
+@@ -40,22 +45,28 @@ class Bullet:
+         # Set bullet power
+         self.power: float = power * 0.75
+         # Set initial velocity
+-        self.velocity: tuple[float, float] = (self.power * math.cos(self.angle), self.power * math.sin(self.angle))
++        self.velocity: tuple[float, float] = (
++            self.power * math.cos(self.angle),
++            self.power * math.sin(self.angle),
++        )
+ 
+     def update(self) -> None:
+-        """Updates the bullets position according to angle, power and gravity while bullet is on air"""
+-        if (self.shooting):
++        """Updates the bullets position according to angle, power and gravity while bullet is on air."""
++        if self.shooting:
+             # Update bullet's last position
+             self.last_pos = self.pos
+-            # Update the x and y position of the bullet
+-            self.pos = (self.pos[0] + self.velocity[0] * self.time + 0.5 * 0 * self.time**2,
+-                        self.pos[1] + self.velocity[1] * self.time + 0.5 * self.gravity * self.time**2)
+-
+             # Increase the time
+             self.time += self.time_step
++            # Update the x and y position of the bullet
++            self.pos = (
++                self.pos[0] + self.velocity[0] * self.time + 0.5 * 0 * self.time**2,
++                self.pos[1]
++                + self.velocity[1] * self.time
++                + 0.5 * self.gravity * self.time**2,
++            )
+ 
+     def set_bullet_hit_position(self, tank_hit=False, pos=None) -> None:
+-        """Updates bullet's hit position"""
++        """Updates bullet's hit position."""
+         # Update bullet last position to new position when bullet hits terrain
+         if pos:
+             self.bullet_hit_position = pos
+@@ -64,6 +75,6 @@ class Bullet:
+             self.bullet_hit_position = self.pos
+ 
+     def set_pos(self, pos) -> None:
+-        """Updates bullet's position"""
++        """Updates bullet's position."""
+         # Update bullet position
+         self.pos = pos
+diff --git a/colors.py b/src/colors.py
+similarity index 100%
+rename from colors.py
+rename to src/colors.py
+diff --git a/fsm.py b/src/fsm.py
+similarity index 95%
+rename from fsm.py
+rename to src/fsm.py
+index a909ff1..944c0ee 100644
+--- a/fsm.py
++++ b/src/fsm.py
+@@ -13,6 +13,7 @@ class State:
+         # Update the state of the tank
+         pass
+ 
++
+ # Class representing a transition between two states in the FSM
+ 
+ 
+@@ -23,26 +24,32 @@ class Transition:
+         # State to transition to
+         self._to = _to
+ 
++
+ # Enum representing the different events that can occur in the game
+ 
+ 
+ class Event(Enum):
+     # Tank is idle
+-    IDLE = 1,
++    IDLE = (1,)
+     # Tank is moving
+-    MOVING = 2,
++    MOVING = (2,)
+     # Tank is firing its bullet
+-    FIRING = 3,
++    FIRING = (3,)
+     # Tank is reloading its bullet
+     RELOADING = 4
+     # Tank is destroyed
+     DESTROYED = 5
+ 
++
+ # Class representing a finite state machine
+ 
+ 
+ class FSM:
+-    def __init__(self, states: list[State], transitions: dict[Event, list[Transition]]) -> None:
++    def __init__(
++        self,
++        states: list[State],
++        transitions: dict[Event, list[Transition]],
++    ) -> None:
+         # List of possible states
+         self._states = states
+         # Dictionary of possible transitions between states, with the key being the event that triggers the transition
+@@ -64,9 +71,7 @@ class FSM:
+         self.current.update(object)
+ 
+         # Return False if the FSM has reached the end state, otherwise return True
+-        if self.current == self.end:
+-            return False
+-        return True
++        return self.current != self.end
+ 
+ 
+ # State representing when the tank is idle
+diff --git a/input_handler.py b/src/input_handler.py
+similarity index 77%
+rename from input_handler.py
+rename to src/input_handler.py
+index 04384a6..1552582 100644
+--- a/input_handler.py
++++ b/src/input_handler.py
+@@ -1,3 +1,4 @@
++from typing import Never
+ 
+ import pygame
+ 
+@@ -11,13 +12,14 @@ VALUE_POWER_UP: float = -VALUE_POWER_DOWN
+ 
+ 
+ class Command:
+-    def __init__(self):
++    def __init__(self) -> None:
+         self.actor = None
+ 
+     # Abstract method that needs to be implemented in subclasses
+-    def execute(self, actor):
++    def execute(self, actor) -> None:
+         raise NotImplementedError
+ 
++
+ # Class representing the input handler, responsible for handling the user's inputs and returning the corresponding commands
+ 
+ 
+@@ -31,36 +33,48 @@ class InputHandler:
+             pygame.K_a: MOVE_LEFT,
+             pygame.K_s: POWER_DOWN,
+             pygame.K_d: MOVE_RIGHT,
+-
+             pygame.K_u: ANGLE_LEFT,
+             pygame.K_i: POWER_UP,
+             pygame.K_o: ANGLE_RIGHT,
+             pygame.K_j: MOVE_LEFT,
+             pygame.K_k: POWER_DOWN,
+             pygame.K_l: MOVE_RIGHT,
+-
+             pygame.K_SPACE: SHOOT,
+         }
+ 
+     def update(self, events: list[bool]) -> dict[int, type[Command]]:
+-        """Returns a dictionary with the keys being the pygame key constants and the values being the commands to be executed, based on the events passed as parameter"""
++        """Returns a dictionary with the keys being the pygame key constants and the values being the commands to be executed, based on the events passed as parameter."""
+         return {key: value for key, value in self.commands.items() if events[key]}
+ 
+     def get_controls_1(self, local_player: bool = True) -> list[int]:
+-        """Returns a list with the keys representing the controls for player 1"""
++        """Returns a list with the keys representing the controls for player 1."""
+         if local_player:
+-            return [pygame.K_q, pygame.K_w, pygame.K_e, pygame.K_a, pygame.K_s, pygame.K_d]
++            return [
++                pygame.K_q,
++                pygame.K_w,
++                pygame.K_e,
++                pygame.K_a,
++                pygame.K_s,
++                pygame.K_d,
++            ]
+         return []
+ 
+     def get_controls_2(self, local_player: bool = True) -> list[int]:
+-        """Returns a list with the keys representing the controls for player 2"""
++        """Returns a list with the keys representing the controls for player 2."""
+         if local_player:
+-            return [pygame.K_u, pygame.K_i, pygame.K_o, pygame.K_j, pygame.K_k, pygame.K_l]
++            return [
++                pygame.K_u,
++                pygame.K_i,
++                pygame.K_o,
++                pygame.K_j,
++                pygame.K_k,
++                pygame.K_l,
++            ]
+         return []
+ 
+ 
+ class ANGLE_LEFT(Command):
+-    def execute(self, actor):
++    def execute(self, actor) -> None:
+         # Save reference to actor
+         self.actor = actor
+         # Call set_angle method on actor with VALUE_ANGLE_LEFT as parameter
+@@ -68,7 +82,7 @@ class ANGLE_LEFT(Command):
+ 
+ 
+ class ANGLE_RIGHT(Command):
+-    def execute(self, actor):
++    def execute(self, actor) -> None:
+         # Save reference to actor
+         self.actor = actor
+         # Call set_angle method on actor with VALUE_ANGLE_RIGHT as parameter
+@@ -76,7 +90,7 @@ class ANGLE_RIGHT(Command):
+ 
+ 
+ class POWER_DOWN(Command):
+-    def execute(self, actor):
++    def execute(self, actor) -> None:
+         # Save reference to actor
+         self.actor = actor
+         # Call set_power method on actor with VALUE_POWER_DOWN as parameter
+@@ -84,7 +98,7 @@ class POWER_DOWN(Command):
+ 
+ 
+ class POWER_UP(Command):
+-    def execute(self, actor):
++    def execute(self, actor) -> None:
+         # Save reference to actor
+         self.actor = actor
+         # Call set_power method on actor with VALUE_POWER_UP as parameter
+@@ -92,8 +106,8 @@ class POWER_UP(Command):
+ 
+ 
+ class MOVE_LEFT(Command):
+-    def execute(self, actor):
+-        """Move the actor to the left"""
++    def execute(self, actor) -> None:
++        """Move the actor to the left."""
+         # Save reference to actor
+         self.actor = actor
+         # Call move method on actor with VALUE_MOVE_LEFT as parameter
+@@ -101,8 +115,8 @@ class MOVE_LEFT(Command):
+ 
+ 
+ class MOVE_RIGHT(Command):
+-    def execute(self, actor):
+-        """Move the actor to the right"""
++    def execute(self, actor) -> None:
++        """Move the actor to the right."""
+         # Save reference to actor
+         self.actor = actor
+         # Call move method on actor with VALUE_MOVE_RIGHT as parameter
+@@ -110,8 +124,8 @@ class MOVE_RIGHT(Command):
+ 
+ 
+ class SHOOT(Command):
+-    def execute(self, actor):
+-        """Make the actor shoot a bullet"""
++    def execute(self, actor) -> None:
++        """Make the actor shoot a bullet."""
+         # Save reference to actor
+         self.actor = actor
+         # Call shoot method on actor
+diff --git a/main.py b/src/main.py
+similarity index 72%
+rename from main.py
+rename to src/main.py
+index 7dc3d6b..f1b9536 100644
+--- a/main.py
++++ b/src/main.py
+@@ -7,12 +7,12 @@ import sys
+ import pygame
+ 
+ import colors
+-from multicast_transceiver import createReceiverSocket, createSenderSocket, sendMessage
+-from sprites import BulletSprite, TankSprite, TerrainSprite
++from .multicast_transceiver import createReceiverSocket, createSenderSocket, sendMessage
++from .sprites import BulletSprite, TankSprite, TerrainSprite
+ 
+ # Local imports
+-from tank import Tank, Tank_Spawner
+-from terrain import Terrain
++from .tank import Tank, Tank_Spawner
++from .terrain import Terrain
+ 
+ FRAMES: int = 0
+ FRAME_LIMIT: int = 60
+@@ -49,8 +49,14 @@ def check_off_limits(gameWidth: int, rect_centerx: int) -> bool:
+     return rect_centerx > gameWidth or rect_centerx < 0
+ 
+ 
+-def bullet_hit_animation(start_animation: bool, screen: pygame.Surface, sound: pygame.mixer.Sound, image: pygame.Surface, position: tuple[int, int]):
+-    """Plays bullet hit animation and sound"""
++def bullet_hit_animation(
++    start_animation: bool,
++    screen: pygame.Surface,
++    sound: pygame.mixer.Sound,
++    image: pygame.Surface,
++    position: tuple[int, int],
++) -> bool:
++    """Plays bullet hit animation and sound."""
+     global FRAMES, FRAME_LIMIT, SOUND_PLAYED_ONCE
+     if not start_animation:
+         return False
+@@ -73,21 +79,29 @@ def bullet_hit_animation(start_animation: bool, screen: pygame.Surface, sound: p
+     return False
+ 
+ 
+-def main(WIDTH, HEIGHT, SCALE) -> None:
++def main(WIDTH: int, HEIGHT: int, SCALE: int) -> bool:
+     # Create the window
+     screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE))
+     # Set the title of the window
+     pygame.display.set_caption("Tanks Game")
+     # Load background image
+     background_image: pygame.Surface = pygame.image.load("images/sky_background.png")
+-    background_image_offset = random.randint(0, background_image.get_size()[0] - WIDTH * SCALE)
+-    background_image = pygame.transform.scale(background_image, (background_image.get_width(), HEIGHT * (SCALE + 1)))
++    background_image_offset = random.randint(
++        0,
++        background_image.get_size()[0] - WIDTH * SCALE,
++    )
++    background_image = pygame.transform.scale(
++        background_image,
++        (background_image.get_width(), HEIGHT * (SCALE + 1)),
++    )
+     # Set the key repeat delay and interval
+     pygame.key.set_repeat(50, 50)
+     # Load explosion sound
+     explosion_sound: pygame.mixer.Sound = pygame.mixer.Sound("images/explosion.wav")
+     # Load explosion image
+-    explosion_image: pygame.Surface = pygame.image.load("images/explosion.png").convert_alpha()
++    explosion_image: pygame.Surface = pygame.image.load(
++        "images/explosion.png",
++    ).convert_alpha()
+     explosion_image = pygame.transform.scale(explosion_image, (2 * SCALE, 2 * SCALE))
+     # Create a Pygame clock to control the frame rate
+     clock: pygame.time.Clock = pygame.time.Clock()
+@@ -97,22 +111,34 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+     tank_base = Tank((-10, -10), controls=1)
+     tank1_sprite: TankSprite = TankSprite(TankSpawner.spawn_tank(tank_base), SCALE)
+     tank2_sprite: TankSprite = TankSprite(TankSpawner.spawn_tank(tank_base), SCALE)
+-    tank1_sprite.tank.set_pos((WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4))\
+-        .set_controls(1)\
+-        .set_tank_name(USERNAME)
+-    tank2_sprite.tank.set_pos((3 * WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4))\
+-        .set_controls(2)\
+-        .set_tank_name("Tank 2")
++    tank1_sprite.tank.set_pos((WIDTH * SCALE / 4, 3 * HEIGHT * SCALE / 4)).set_controls(
++        1,
++    ).set_tank_name(USERNAME)
++    tank2_sprite.tank.set_pos(
++        (
++            3 * WIDTH * SCALE / 4,
++            3 * HEIGHT * SCALE / 4,
++        )
++    ).set_controls(2).set_tank_name("Tank 2")
+     tank1_sprite.update_center_pos()
+     tank2_sprite.update_center_pos()
+     # Create terrain for tanks to move
+-    terrain_sprite = TerrainSprite(Terrain(WIDTH, HEIGHT, SCALE, colors.GREEN, tank1_sprite.get_bottom_pos()), SCALE)
++    terrain_sprite = TerrainSprite(
++        Terrain(WIDTH, HEIGHT, SCALE, colors.GREEN, tank1_sprite.get_bottom_pos()),
++        SCALE,
++    )
+     # Create bullet sprites for tanks
+     bullet1_sprite: BulletSprite = BulletSprite(tank1_sprite.tank.bullet, SCALE)
+     bullet2_sprite: BulletSprite = BulletSprite(tank2_sprite.tank.bullet, SCALE)
+     # Add all sprites to a group of sprites
+     all_sprites = pygame.sprite.Group()
+-    all_sprites.add(bullet1_sprite, bullet2_sprite, tank1_sprite, tank2_sprite, terrain_sprite)
++    all_sprites.add(
++        bullet1_sprite,
++        bullet2_sprite,
++        tank1_sprite,
++        tank2_sprite,
++        terrain_sprite,
++    )
+ 
+     # Establish first frame positions
+     tank1_sprite.update()
+@@ -159,7 +185,6 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+     GAME_START: bool = False  # variable to check if the game has started
+     SYNC_COMPLETE: bool = False  # variable to check if the synchronization is complete
+     while running:
+-
+         # Handle events
+         for event in pygame.event.get():
+             if event.type == pygame.QUIT:
+@@ -176,7 +201,17 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 # If this is the first iteration of the loop
+                 if count == 0:
+                     # Send a message to the sender socket indicating the user is waiting and working
+-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "waiting", "status2": "working"}))
++                    sendMessage(
++                        senderSocket,
++                        pickle.dumps(
++                            {
++                                "user": USERNAME,
++                                "id": USER_ID,
++                                "status": "waiting",
++                                "status2": "working",
++                            }
++                        ),
++                    )
+                     # Reset the count
+                     count = FRAME_LIMIT
+                 # Decrement the count
+@@ -192,7 +227,17 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 # If this is the first iteration of the loop
+                 if count == 0:
+                     # Send a message to the sender socket indicating the user is ready and the current player
+-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
++                    sendMessage(
++                        senderSocket,
++                        pickle.dumps(
++                            {
++                                "user": USERNAME,
++                                "id": USER_ID,
++                                "status": "ready",
++                                "current_player": current_player,
++                            }
++                        ),
++                    )
+                     # Reset the count
+                     count = FRAME_LIMIT
+                 # Decrement the count
+@@ -202,7 +247,16 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 # If this is the first iteration of the loop
+                 if count == 0:
+                     # Send a message to the sender socket indicating the user is syncing
+-                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "sync"}))
++                    sendMessage(
++                        senderSocket,
++                        pickle.dumps(
++                            {
++                                "user": USERNAME,
++                                "id": USER_ID,
++                                "status": "sync",
++                            }
++                        ),
++                    )
+                     # Reset the count
+                     count = FRAME_LIMIT
+                 # Decrement the count
+@@ -239,19 +293,19 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 # Initialize the input keys list to all False
+                 input_keys = [False] * 512
+                 # Receive a message from the receiver socket
+-                if (msg := receiverSocket.recvfrom(8192)):
++                if msg := receiverSocket.recvfrom(8192):
+                     # Deserialize the message and store it in the userCommand dictionary
+                     userCommand: dict = pickle.loads(msg[0])
+                     # Get the ID of the user who sent the message
+                     mc_user_id = userCommand.get("id")
+                     # If the ID does not match the current user's ID
+-                    if (mc_user_id != USER_ID):
++                    if mc_user_id != USER_ID:
+                         # If the message includes a status field
+                         if mc_user_status := userCommand.get("status"):
+                             # If the status is "waiting" and sync has not yet been completed
+                             if mc_user_status == "waiting" and (not SYNC_COMPLETE):
+                                 # Set the PLAYER flag based on the ID comparison
+-                                PLAYER = (mc_user_id > USER_ID)
++                                PLAYER = mc_user_id > USER_ID
+                                 # Store the other player's ID
+                                 OTHER_PLAYER_ID = mc_user_id
+                                 # Store the other player's name
+@@ -259,7 +313,16 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                                 # Set the GAME_STARTING flag
+                                 GAME_STARTING = True
+                                 # Send a message to the sender socket indicating the user is waiting
+-                                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "waiting"}))
++                                sendMessage(
++                                    senderSocket,
++                                    pickle.dumps(
++                                        {
++                                            "user": USERNAME,
++                                            "id": USER_ID,
++                                            "status": "waiting",
++                                        }
++                                    ),
++                                )
+                     # If the ID of the user who sent the message matches the other player's ID
+                     if mc_user_id == OTHER_PLAYER_ID:
+                         # If the message includes a status field
+@@ -275,20 +338,49 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                                 # Reset the ready_flag flag
+                                 ready_flag = False
+                                 # Send a message to the sender socket indicating the user is ready and the current player
+-                                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
++                                sendMessage(
++                                    senderSocket,
++                                    pickle.dumps(
++                                        {
++                                            "user": USERNAME,
++                                            "id": USER_ID,
++                                            "status": "ready",
++                                            "current_player": current_player,
++                                        }
++                                    ),
++                                )
+                             # If the status is "sync" and sync has not yet been completed
+                             elif (mc_user_status == "sync") and (not SYNC_COMPLETE):
+                                 # If the game has not yet started
+-                                if (not GAME_START):
++                                if not GAME_START:
+                                     # Send a message to the sender socket indicating the user is ready and the current player
+-                                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "ready", "current_player": current_player}))
++                                    sendMessage(
++                                        senderSocket,
++                                        pickle.dumps(
++                                            {
++                                                "user": USERNAME,
++                                                "id": USER_ID,
++                                                "status": "ready",
++                                                "current_player": current_player,
++                                            }
++                                        ),
++                                    )
+                                 else:
+                                     # Set the SYNC_COMPLETE flag
+                                     SYNC_COMPLETE = True
+                                     # Send a message to the sender socket indicating the user is ready to sync
+-                                    sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "status": "sync"}))
++                                    sendMessage(
++                                        senderSocket,
++                                        pickle.dumps(
++                                            {
++                                                "user": USERNAME,
++                                                "id": USER_ID,
++                                                "status": "sync",
++                                            }
++                                        ),
++                                    )
+                         # If the message includes a 'keys' field
+-                        elif (mc_user_keys := userCommand.get("keys")):
++                        elif mc_user_keys := userCommand.get("keys"):
+                             # Update the input keys list with the keys sent by the other player
+                             input_keys: list[int] = mc_user_keys
+             except BlockingIOError:
+@@ -314,9 +406,14 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+         # Retrieve all keys that are being pressed
+         keys_pressed: pygame.key.ScancodeWrapper = pygame.key.get_pressed()
+         if LAN_GAME:
+-            keys: pygame.key.ScancodeWrapper = pygame.key.ScancodeWrapper([a or b for a, b in zip(keys_pressed, input_keys)])
++            keys: pygame.key.ScancodeWrapper = pygame.key.ScancodeWrapper(
++                [a or b for a, b in zip(keys_pressed, input_keys, strict=False)]
++            )
+             if any(keys_pressed):
+-                sendMessage(senderSocket, pickle.dumps({"user": USERNAME, "id": USER_ID, "keys": keys}))
++                sendMessage(
++                    senderSocket,
++                    pickle.dumps({"user": USERNAME, "id": USER_ID, "keys": keys}),
++                )
+         else:
+             keys = keys_pressed
+ 
+@@ -342,8 +439,12 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+             # Bullet explosion animation
+             bullet_1_explosion = True
+             # Set bullet 2 hit position
+-            bullet1_sprite.bullet.set_bullet_hit_position(pos=intersection(bullet1_sprite.rect.bottomleft + bullet1_sprite.bullet.last_pos,
+-                                                                           terrain_sprite.rect.topleft + terrain_sprite.rect.topright))
++            bullet1_sprite.bullet.set_bullet_hit_position(
++                pos=intersection(
++                    bullet1_sprite.rect.bottomleft + bullet1_sprite.bullet.last_pos,
++                    terrain_sprite.rect.topleft + terrain_sprite.rect.topright,
++                ),
++            )
+ 
+             # Check if bullet2 is off the limits of the screen
+         if check_off_limits(WIDTH * SCALE, bullet2_sprite.rect.centerx):
+@@ -367,8 +468,12 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+             # Bullet explosion animation
+             bullet_2_explosion = True
+             # Set bullet 2 hit position
+-            bullet2_sprite.bullet.set_bullet_hit_position(pos=intersection(bullet2_sprite.rect.bottomleft + bullet2_sprite.bullet.last_pos,
+-                                                                           terrain_sprite.rect.topleft + terrain_sprite.rect.topright))
++            bullet2_sprite.bullet.set_bullet_hit_position(
++                pos=intersection(
++                    bullet2_sprite.rect.bottomleft + bullet2_sprite.bullet.last_pos,
++                    terrain_sprite.rect.topleft + terrain_sprite.rect.topright,
++                ),
++            )
+ 
+             # Switch players
+         if not tank1_sprite.tank.current_player and current_player == 1:
+@@ -400,13 +505,33 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+ 
+         # Draw preview lines for tank's bullets
+         if current_player == 1 and not game_over:
+-            pygame.draw.line(screen, colors.BLACK, tank1_sprite.rect.center, (
+-                tank1_sprite.rect.center[0] + tank1_sprite.tank.bullet_power * math.cos(tank1_sprite.tank.bullet_angle),
+-                tank1_sprite.rect.center[1] + tank1_sprite.tank.bullet_power * math.sin(tank1_sprite.tank.bullet_angle)))
++            pygame.draw.line(
++                screen,
++                colors.BLACK,
++                tank1_sprite.rect.center,
++                (
++                    tank1_sprite.rect.center[0]
++                    + tank1_sprite.tank.bullet_power
++                    * math.cos(tank1_sprite.tank.bullet_angle),
++                    tank1_sprite.rect.center[1]
++                    + tank1_sprite.tank.bullet_power
++                    * math.sin(tank1_sprite.tank.bullet_angle),
++                ),
++            )
+         elif current_player == 2 and not game_over:
+-            pygame.draw.line(screen, colors.BLACK, tank2_sprite.rect.center, (
+-                tank2_sprite.rect.center[0] + tank2_sprite.tank.bullet_power * math.cos(tank2_sprite.tank.bullet_angle),
+-                tank2_sprite.rect.center[1] + tank2_sprite.tank.bullet_power * math.sin(tank2_sprite.tank.bullet_angle)))
++            pygame.draw.line(
++                screen,
++                colors.BLACK,
++                tank2_sprite.rect.center,
++                (
++                    tank2_sprite.rect.center[0]
++                    + tank2_sprite.tank.bullet_power
++                    * math.cos(tank2_sprite.tank.bullet_angle),
++                    tank2_sprite.rect.center[1]
++                    + tank2_sprite.tank.bullet_power
++                    * math.sin(tank2_sprite.tank.bullet_angle),
++                ),
++            )
+ 
+         # Draw tank1's name
+         tank1_sprite.draw_name(screen)
+@@ -418,10 +543,22 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+         # Draw tank2's health
+         tank2_sprite.draw_health(screen)
+ 
+-        if bullet_hit_animation(bullet_1_explosion, screen, explosion_sound, explosion_image, bullet1_sprite.bullet.bullet_hit_position):
++        if bullet_hit_animation(
++            bullet_1_explosion,
++            screen,
++            explosion_sound,
++            explosion_image,
++            bullet1_sprite.bullet.bullet_hit_position,
++        ):
+             # If bullet 1 explosion animation has ended
+             bullet_1_explosion = False
+-        if bullet_hit_animation(bullet_2_explosion, screen, explosion_sound, explosion_image, bullet2_sprite.bullet.bullet_hit_position):
++        if bullet_hit_animation(
++            bullet_2_explosion,
++            screen,
++            explosion_sound,
++            explosion_image,
++            bullet2_sprite.bullet.bullet_hit_position,
++        ):
+             # If bullet 2 explosion animation has ended
+             bullet_2_explosion = False
+ 
+@@ -430,10 +567,7 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 # If the game is over, determine the winner based on the value of game_winner
+                 if not PLAYER:
+                     # If the current player is not the user, set player_winner to the other player's name
+-                    if game_winner == 1:
+-                        player_winner = OTHER_PLAYER_NAME
+-                    else:
+-                        player_winner = USERNAME
++                    player_winner = OTHER_PLAYER_NAME if game_winner == 1 else USERNAME
+                 # If the current player is the user, set player_winner to the user's name
+                 elif game_winner == 1:
+                     player_winner = USERNAME
+@@ -448,15 +582,15 @@ def main(WIDTH, HEIGHT, SCALE) -> None:
+                 text_rect2 = text2.get_rect()
+                 # Set the rectangles to be centered on the screen
+                 text_rect.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2)
+-                text_rect2.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2 + text_rect.height)
++                text_rect2.center = (
++                    WIDTH * SCALE // 2,
++                    HEIGHT * SCALE // 2 + text_rect.height,
++                )
+                 # Blit the text surfaces to the screen
+                 screen.blit(text, text_rect)
+                 screen.blit(text2, text_rect2)
+             else:
+-                if game_winner == 1:
+-                    player_winner = USERNAME
+-                else:
+-                    player_winner = OTHER_PLAYER_NAME
++                player_winner = USERNAME if game_winner == 1 else OTHER_PLAYER_NAME
+                 text = font.render(f"Player {player_winner} Won", True, colors.BLACK)
+                 text_rect = text.get_rect()
+                 text_rect.center = (WIDTH * SCALE // 2, HEIGHT * SCALE // 2)
+diff --git a/multicast_transceiver.py b/src/multicast_transceiver.py
+similarity index 66%
+rename from multicast_transceiver.py
+rename to src/multicast_transceiver.py
+index fcd31a5..9ae89c9 100644
+--- a/multicast_transceiver.py
++++ b/src/multicast_transceiver.py
+@@ -2,7 +2,9 @@ import socket
+ import struct
+ 
+ 
+-def createReceiverSocket(MCAST_GRP="224.1.1.1", MCAST_PORT=5007):
++def createReceiverSocket(
++    MCAST_GRP: str = "224.1.1.1", MCAST_PORT: int = 5007
++) -> socket.socket:
+     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+     sock.bind(("", MCAST_PORT))
+@@ -11,11 +13,16 @@ def createReceiverSocket(MCAST_GRP="224.1.1.1", MCAST_PORT=5007):
+     return sock
+ 
+ 
+-def createSenderSocket(MULTICAST_TTL=2):
++def createSenderSocket(MULTICAST_TTL: int = 2) -> socket.socket:
+     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+     return sock
+ 
+ 
+-def sendMessage(sock, message, MCAST_GRP="224.1.1.1", MCAST_PORT=5007):
++def sendMessage(
++    sock: socket.socket,
++    message: bytes,
++    MCAST_GRP: str = "224.1.1.1",
++    MCAST_PORT: int = 5007,
++) -> None:
+     sock.sendto(message, (MCAST_GRP, MCAST_PORT))
+diff --git a/sprites.py b/src/sprites.py
+similarity index 63%
+rename from sprites.py
+rename to src/sprites.py
+index 35a2645..1d35e2a 100644
+--- a/sprites.py
++++ b/src/sprites.py
+@@ -5,9 +5,9 @@ import pygame
+ import colors
+ 
+ # Local imports
+-from bullet import Bullet
+-from tank import Tank
+-from terrain import Terrain
++from .bullet import Bullet
++from .tank import Tank
++from .terrain import Terrain
+ 
+ 
+ class BaseSprite(pygame.sprite.Sprite):
+@@ -32,7 +32,10 @@ class BulletSprite(BaseSprite):
+         self.bullet: Bullet = bullet
+         # Load the image for the bullet
+         self.image: pygame.Surface = pygame.image.load("images/bullet.png").convert()
+-        self.image = pygame.transform.scale(self.image, (2 * (SCALE // 2), (SCALE // 2)))
++        self.image = pygame.transform.scale(
++            self.image,
++            (2 * (SCALE // 2), (SCALE // 2)),
++        )
+         # Set the colorkey for the image, which will be transparent when drawn
+         self.image.set_colorkey(self.image.get_at((0, 0)))
+         # Create a rect based on the image
+@@ -47,14 +50,16 @@ class BulletSprite(BaseSprite):
+ 
+ class TankSprite(BaseSprite):
+     def __init__(self, tank: Tank, SCALE) -> None:
+-        """Initialize TankSprite object"""
++        """Initialize TankSprite object."""
+         # Call superclass initialization method
+         super().__init__(SCALE)
+ 
+         # Set attribute "tank" to the passed Tank object
+         self.tank: Tank = tank
+         # Load image for sprite and set its colorkey to the color of the top left pixel
+-        self.image: pygame.Surface = pygame.image.load("images/tank.png").convert_alpha()
++        self.image: pygame.Surface = pygame.image.load(
++            "images/tank.png",
++        ).convert_alpha()
+         self.image.set_colorkey(self.image.get_at((0, 0)))
+         # Get a rectangular area that encloses the sprite image
+         self.rect: pygame.Rect = self.image.get_rect()
+@@ -75,54 +80,84 @@ class TankSprite(BaseSprite):
+         # Set the position of the bullet in the Tank object to the center position of the Tank object
+         self.tank.bullet.set_pos(self.tank.center_pos)
+ 
+-    def draw_name(self, screen: pygame.Surface):
++    def draw_name(self, screen: pygame.Surface) -> None:
+         # Rendered text of tank's name
+         self.text_name = self.font.render(f"{self.tank.name}", True, colors.BLACK)
+         # Get the dimensions of the rendered text
+         text_rect = self.text_name.get_rect()
+         # Set the position of the text so it is centered on the screen
+-        text_rect.center = (self.rect.centerx, self.rect.top - self.health_bar_size[1] - text_rect.height / 2)
++        text_rect.center = (
++            self.rect.centerx,
++            self.rect.top - self.health_bar_size[1] - text_rect.height / 2,
++        )
+         screen.blit(self.text_name, text_rect)
+ 
+     def draw_health(self, screen: pygame.Surface) -> None:
+-        pygame.draw.rect(screen, colors.RED,
+-                         pygame.Rect(self.rect.centerx, self.rect.top, (self.health_bar_size[0]) * self.tank.health / self.tank.max_health, 2 * self.health_bar_size[1])
+-                         .move(-self.health_bar_size[0] / 2, -self.health_bar_size[1]))
+-        pygame.draw.rect(screen, colors.BLACK,
+-                         pygame.Rect(self.rect.centerx, self.rect.top, self.health_bar_size[0], 2 * self.health_bar_size[1])
+-                         .move(-self.health_bar_size[0] / 2, -self.health_bar_size[1]), width=1)
++        pygame.draw.rect(
++            screen,
++            colors.RED,
++            pygame.Rect(
++                self.rect.centerx,
++                self.rect.top,
++                (self.health_bar_size[0]) * self.tank.health / self.tank.max_health,
++                2 * self.health_bar_size[1],
++            ).move(-self.health_bar_size[0] / 2, -self.health_bar_size[1]),
++        )
++        pygame.draw.rect(
++            screen,
++            colors.BLACK,
++            pygame.Rect(
++                self.rect.centerx,
++                self.rect.top,
++                self.health_bar_size[0],
++                2 * self.health_bar_size[1],
++            ).move(-self.health_bar_size[0] / 2, -self.health_bar_size[1]),
++            width=1,
++        )
+ 
+     def update(self) -> None:
+-        """Update sprite's position and Tank object's center position"""
++        """Update sprite's position and Tank object's center position."""
+         # Set the top left corner of the rectangular area to the position of the Tank object
+         self.rect.topleft = self.tank.pos
+         # Set the center position of the Tank object to the center of the rectangular area
+         self.tank.set_center_pos(self.rect.center)
+-        if (self.tank.health <= 0):
+-            self.image: pygame.Surface = pygame.image.load("images/Tank_Explosion_4.png").convert_alpha()
+-        elif (self.tank.health < 0.1 * self.tank.max_health):
+-            self.image: pygame.Surface = pygame.image.load("images/Tank_Explosion_3.png").convert_alpha()
+-        elif (self.tank.health < 0.25 * self.tank.max_health):
+-            self.image: pygame.Surface = pygame.image.load("images/Tank_Explosion_2.png").convert_alpha()
+-        elif (self.tank.health < 0.5 * self.tank.max_health):
+-            self.image: pygame.Surface = pygame.image.load("images/Tank_Explosion_1.png").convert_alpha()
+-        elif (self.tank.health < 0.75 * self.tank.max_health):
+-            self.image: pygame.Surface = pygame.image.load("images/Tank_Explosion_0.png").convert_alpha()
++        if self.tank.health <= 0:
++            self.image: pygame.Surface = pygame.image.load(
++                "images/Tank_Explosion_4.png",
++            ).convert_alpha()
++        elif self.tank.health < 0.1 * self.tank.max_health:
++            self.image: pygame.Surface = pygame.image.load(
++                "images/Tank_Explosion_3.png",
++            ).convert_alpha()
++        elif self.tank.health < 0.25 * self.tank.max_health:
++            self.image: pygame.Surface = pygame.image.load(
++                "images/Tank_Explosion_2.png",
++            ).convert_alpha()
++        elif self.tank.health < 0.5 * self.tank.max_health:
++            self.image: pygame.Surface = pygame.image.load(
++                "images/Tank_Explosion_1.png",
++            ).convert_alpha()
++        elif self.tank.health < 0.75 * self.tank.max_health:
++            self.image: pygame.Surface = pygame.image.load(
++                "images/Tank_Explosion_0.png",
++            ).convert_alpha()
+ 
+     def get_bottom_pos(self) -> int:
+-        """Return the y-coordinate of the bottom of the sprite"""
++        """Return the y-coordinate of the bottom of the sprite."""
+         return self.tank.pos[1] + self.image.get_height()
+ 
+ 
+ class TerrainSprite(BaseSprite):
+     def __init__(self, terrain: Terrain, SCALE) -> None:
+-        """Initialize TerrainSprite object"""
++        """Initialize TerrainSprite object."""
+         super().__init__(SCALE)
+ 
+         # Assign terrain object to sprite
+         self.terrain: Terrain = terrain
+         # Load terrain image for sprite
+-        self.image: pygame.Surface = pygame.image.load("images/grass_dirt_block.png").convert()
++        self.image: pygame.Surface = pygame.image.load(
++            "images/grass_dirt_block.png",
++        ).convert()
+         # Scale image to terrain dimensions
+         self.image = pygame.transform.scale(self.image, (terrain.width, terrain.height))
+         # Get the rect of the image and move the rect to the y position of the terrain
+diff --git a/tank.py b/src/tank.py
+similarity index 86%
+rename from tank.py
+rename to src/tank.py
+index 89b6975..4ffaa17 100644
+--- a/tank.py
++++ b/src/tank.py
+@@ -1,10 +1,11 @@
+ # Standard library imports
+ import math
++from typing import Any
+ 
+ # Local imports
+-from bullet import Bullet
+-from fsm import FSM, STATES, TRANSITIONS, Event
+-from input_handler import SHOOT, Command, InputHandler
++from .bullet import Bullet
++from .fsm import FSM, STATES, TRANSITIONS, Event
++from .input_handler import SHOOT, Command, InputHandler
+ 
+ 
+ class Tank:
+@@ -50,24 +51,26 @@ class Tank:
+         return self
+ 
+     def get_controls(self) -> list[int]:
+-        """Returns the controls for the current player"""
++        """Returns the controls for the current player."""
+         # Return controls for player 1 if self.controls is 1, otherwise return controls for player 2
+-        return self.IH.get_controls_1() if self.controls == 1 else self.IH.get_controls_2()
++        return (
++            self.IH.get_controls_1() if self.controls == 1 else self.IH.get_controls_2()
++        )
+ 
+     def move(self, direction: tuple[int, int]) -> None:
+-        """Updates tanks position accordingly"""
++        """Updates tanks position accordingly."""
+         # Update the position of the tank
+-        self.pos = tuple(a + b for a, b in zip(self.pos, direction))
++        self.pos = tuple(a + b for a, b in zip(self.pos, direction, strict=False))
+         # Update the position of the bullet
+         self.bullet.set_pos(self.center_pos)
+ 
+     def shoot(self) -> None:
+-        """Calls bullet's shoot function with correct parameters"""
++        """Calls bullet's shoot function with correct parameters."""
+         # Call the shoot method of the bullet, passing the center position, angle, and power of the bullet
+         self.bullet.shoot(self.center_pos, self.bullet_angle, self.bullet_power)
+ 
+-    def update(self, events) -> None:
+-        """Updates tank actions"""
++    def update(self, events: Any) -> bool | None:
++        """Updates tank actions."""
+         # Get input commands inserted by the player
+         self.commands: dict[int, type[Command]] = self.IH.update(events)
+         event = None
+@@ -99,12 +102,12 @@ class Tank:
+         return self.fsm.update(event=event, object=self)
+ 
+     def set_center_pos(self, pos: tuple[int, int]) -> None:
+-        """Sets the center position of the tank"""
++        """Sets the center position of the tank."""
+         # Set the center position of the tank
+         self.center_pos: tuple[int, int] = pos
+ 
+     def set_angle(self, angle: float) -> None:
+-        """Changes bullet angle"""
++        """Changes bullet angle."""
+         # Update the bullet angle
+         self.bullet_angle += angle
+         # Clamp the bullet angle to the range -pi to 0
+@@ -114,7 +117,7 @@ class Tank:
+             self.bullet_angle = -math.pi
+ 
+     def set_power(self, power: float) -> None:
+-        """Changes bullet power"""
++        """Changes bullet power."""
+         # Update the bullet power
+         self.bullet_power += power
+         # Clamp the bullet power to the range 0-100
+@@ -123,8 +126,8 @@ class Tank:
+         elif self.bullet_power < 0:
+             self.bullet_power = 0
+ 
+-    def calculate_damage(self, bullet_pos: tuple[int, int], bullet_type=0):
+-        """Calculate the damage done to other tank based on distance (and bullet type)"""
++    def calculate_damage(self, bullet_pos: tuple[int, int], bullet_type=0) -> None:
++        """Calculate the damage done to other tank based on distance (and bullet type)."""
+         distance = self.distance(bullet_pos, self.center_pos)
+         # Use some arbitrary constants to tune the damage formula
+         # damage coefficient is set to the minimum distance to the center of the tank from any point of the tank's rect
+@@ -135,8 +138,13 @@ class Tank:
+         # Calculate the damage based on distance
+         if distance > 50:
+             damage = 0
++        elif distance <= 0:
++            damage = max_damage
+         else:
+-            damage = min((1 / (distance * distance)) * damage_coefficient * max_damage, max_damage)
++            damage = min(
++                (1 / (distance * distance)) * damage_coefficient * max_damage,
++                max_damage,
++            )
+ 
+         # Decrease tank's health
+         self.health -= damage
+@@ -147,7 +155,7 @@ class Tank:
+         return math.dist(coord1, coord2)
+ 
+     def set_tank_name(self, name) -> "Tank":
+-        """Sets tank's name"""
++        """Sets tank's name."""
+         self.name = name
+         return self
+ 
+diff --git a/terrain.py b/src/terrain.py
+similarity index 100%
+rename from terrain.py
+rename to src/terrain.py
+diff --git a/tests/__init__.py b/tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/test_bullet.py b/tests/test_bullet.py
+new file mode 100644
+index 0000000..7addbad
+--- /dev/null
++++ b/tests/test_bullet.py
+@@ -0,0 +1,23 @@
++from src.bullet import Bullet
++
++
++def test_bullet_init():
++    bullet = Bullet((10, 10))
++    assert bullet.pos == (10, 10)
++    assert not bullet.shooting
++
++
++def test_bullet_shoot():
++    bullet = Bullet((10, 10))
++    bullet.shoot((20, 20), 0, 100)
++    assert bullet.pos == (20, 20)
++    assert bullet.shooting
++    assert bullet.power == 75
++    assert bullet.velocity == (75, 0)
++
++
++def test_bullet_update():
++    bullet = Bullet((10, 10))
++    bullet.shoot((10, 10), 0, 100)
++    bullet.update()
++    assert bullet.pos[0] > 10
+diff --git a/tests/test_tank.py b/tests/test_tank.py
+new file mode 100644
+index 0000000..88c66fe
+--- /dev/null
++++ b/tests/test_tank.py
+@@ -0,0 +1,16 @@
++from src.tank import Tank
++
++
++def test_tank_init():
++    tank = Tank((0, 0), controls=1)
++    assert tank.pos == (0, 0)
++    assert tank.health == 100
++    assert tank.bullet_power == 50
++    assert tank.bulletHit is False
++
++
++def test_tank_damage():
++    tank = Tank((0, 0))
++    tank.set_center_pos((0, 0))
++    tank.calculate_damage((0, 0))
++    assert tank.health < 100
+diff --git a/tests/test_terrain.py b/tests/test_terrain.py
+new file mode 100644
+index 0000000..4d18253
+--- /dev/null
++++ b/tests/test_terrain.py
+@@ -0,0 +1,9 @@
++from src.terrain import Terrain
++
++
++def test_terrain_init():
++    terrain = Terrain(800, 600, 1, (0, 255, 0), 500)
++    assert terrain.width == 800
++    assert terrain.height == 100
++    assert terrain.color == (0, 255, 0)
++    assert terrain.ypos == 500
+

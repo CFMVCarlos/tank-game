@@ -13,6 +13,7 @@ class State:
         # Update the state of the tank
         pass
 
+
 # Class representing a transition between two states in the FSM
 
 
@@ -23,26 +24,32 @@ class Transition:
         # State to transition to
         self._to = _to
 
+
 # Enum representing the different events that can occur in the game
 
 
 class Event(Enum):
     # Tank is idle
-    IDLE = 1,
+    IDLE = (1,)
     # Tank is moving
-    MOVING = 2,
+    MOVING = (2,)
     # Tank is firing its bullet
-    FIRING = 3,
+    FIRING = (3,)
     # Tank is reloading its bullet
     RELOADING = 4
     # Tank is destroyed
     DESTROYED = 5
 
+
 # Class representing a finite state machine
 
 
 class FSM:
-    def __init__(self, states: list[State], transitions: dict[Event, list[Transition]]) -> None:
+    def __init__(
+        self,
+        states: list[State],
+        transitions: dict[Event, list[Transition]],
+    ) -> None:
         # List of possible states
         self._states = states
         # Dictionary of possible transitions between states, with the key being the event that triggers the transition
@@ -64,9 +71,7 @@ class FSM:
         self.current.update(object)
 
         # Return False if the FSM has reached the end state, otherwise return True
-        if self.current == self.end:
-            return False
-        return True
+        return self.current != self.end
 
 
 # State representing when the tank is idle
