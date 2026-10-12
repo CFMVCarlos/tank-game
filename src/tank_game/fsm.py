@@ -9,8 +9,8 @@ class State:
 
     Parameters
     ----------
-    name : str, optional
-        The human-readable name of the state, default is "".
+    name : str, default=""
+        The human-readable name of the state.
     """
 
     def __init__(self, name: str = "") -> None:

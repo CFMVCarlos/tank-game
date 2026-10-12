@@ -89,8 +89,8 @@ def draw_aim_trajectory(
         Current shot velocity magnitude.
     angle : float
         Current turret launch angle in radians.
-    num_points : int, optional
-        Number of preview trajectory dots, default is 16.
+    num_points : int, default=16
+        Number of preview trajectory dots.
     """
     scaled_power = power * 0.75
     vx = scaled_power * math.cos(angle)
@@ -204,7 +204,11 @@ def show_start_screen(
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         panel.fill((15, 20, 30, 225))
         pygame.draw.rect(
-            panel, colors.GOLD, panel.get_rect(), width=2, border_radius=12
+            panel,
+            colors.GOLD,
+            panel.get_rect(),
+            width=2,
+            border_radius=12,
         )
         screen.blit(panel, ((screen_w - panel_w) // 2, (screen_h - panel_h) // 2))
 
@@ -261,20 +265,20 @@ def run_game(
 
     Parameters
     ----------
-    width : int, optional
-        Virtual width unit count, default is 64.
-    height : int, optional
-        Virtual height unit count, default is 48.
-    scale : int, optional
-        Screen scaling multiplier, default is 10.
-    username : str, optional
-        Local player display name, default is "Tank 1".
-    lan_game : bool, optional
-        Enable UDP multicast LAN synchronization, default is False.
-    max_frames : int | None
+    width : int, default=64
+        Virtual width unit count.
+    height : int, default=48
+        Virtual height unit count.
+    scale : int, default=10
+        Screen scaling multiplier.
+    username : str, default="Tank 1"
+        Local player display name.
+    lan_game : bool, default=False
+        Enable UDP multicast LAN synchronization.
+    max_frames : int | None, default=None
         Optional maximum frame limit for headless/test executions.
-    show_menu : bool, optional
-        Display interactive title start screen before combat, default is True.
+    show_menu : bool, default=True
+        Display interactive title start screen before combat.
 
     Returns
     -------
@@ -334,11 +338,11 @@ def run_game(
     bullet2_sprite = BulletSprite(tank2.bullet, scale)
 
     all_sprites = pygame.sprite.Group(
-        terrain_sprite,
-        tank1_sprite,
-        tank2_sprite,
-        bullet1_sprite,
-        bullet2_sprite,
+        terrain_sprite,  # pyright: ignore[reportArgumentType]
+        tank1_sprite,  # pyright: ignore[reportArgumentType]
+        tank2_sprite,  # pyright: ignore[reportArgumentType]
+        bullet1_sprite,  # pyright: ignore[reportArgumentType]
+        bullet2_sprite,  # pyright: ignore[reportArgumentType]
     )
 
     # Network configuration
@@ -547,12 +551,12 @@ def main(
 
     Parameters
     ----------
-    width : int, optional
-        Virtual width units, default is 64.
-    height : int, optional
-        Virtual height units, default is 48.
-    scale : int, optional
-        Resolution scale factor, default is 10.
+    width : int, default=64
+        Virtual width units.
+    height : int, default=48
+        Virtual height units.
+    scale : int, default=10
+        Resolution scale factor.
     **kwargs : Any
         Additional keyword arguments forwarded to run_game.
 

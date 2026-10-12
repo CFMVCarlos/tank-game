@@ -22,9 +22,9 @@ class Particle:
         RGB base color.
     velocity : tuple[float, float]
         Initial velocity vector (vx, vy).
-    radius : float
+    radius : float, default=3.0
         Initial particle size.
-    lifetime : int
+    lifetime : int, default=25
         Maximum lifespan in animation ticks.
     """
 
@@ -100,8 +100,8 @@ class ParticleManager:
         ----------
         pos : tuple[int, int]
             Origin (x, y) coordinates of impact.
-        count : int, optional
-            Number of particles emitted, default is 30.
+        count : int, default=30
+            Number of particles emitted.
         """
         palette: Sequence[tuple[int, int, int]] = (
             colors.GOLD,
@@ -126,7 +126,7 @@ class ParticleManager:
                     (vx, vy),
                     radius,
                     lifetime,
-                )
+                ),
             )
 
     def spawn_spark_trail(self, pos: tuple[int, int]) -> None:
@@ -148,7 +148,7 @@ class ParticleManager:
                     (vx, vy),
                     radius=1.5,
                     lifetime=10,
-                )
+                ),
             )
 
     def update(self) -> None:

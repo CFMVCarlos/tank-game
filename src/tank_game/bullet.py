@@ -34,10 +34,10 @@ class Bullet:
         ----------
         pos : tuple[int, int]
             Origin (x, y) coordinates from the firing tank.
-        angle : float, optional
-            Launch angle in radians, default is -pi/4.
-        power : float, optional
-            Firing power magnitude, default is 50.0.
+        angle : float, default=-math.pi / 4
+            Launch angle in radians.
+        power : float, default=50.0
+            Firing power magnitude.
         """
         self.pos = (float(pos[0]), float(pos[1]))
         self.last_pos = self.pos

@@ -45,11 +45,27 @@ preview = true
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["CPY", "FIX", "TD"]
+ignore = [
+    "CPY",      # Missing copyright notice
+    "FIX",      # TODO/FIXME markers
+    "TD",       # TODO issues
+    "COM812",   # Conflicts with ruff formatter
+    "S311",     # Non-cryptographic standard pseudo-random generators (used for gameplay/particles)
+    "PLR2004",  # Magic values (frequent in games for coordinate math and visual constants)
+    "FBT001",   # Boolean-typed positional argument in function definition
+    "FBT002",   # Boolean default positional argument in function definition
+    "FBT003",   # Boolean positional value in function call (e.g. font.render antialias=True)
+]
 pydocstyle.convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "SLF001"]
+"tests/*" = ["S101", "SLF001", "ANN201", "D103"]
+"src/tank_game/fsm.py" = ["ANN401", "PLR6301"]
+"src/tank_game/input_handler.py" = ["ANN401", "PLR6301"]
+"src/tank_game/game.py" = ["C901", "PLR0912", "PLR0913", "PLR0914", "PLR0915", "PLR0917", "ANN401"]
+"src/tank_game/network.py" = ["N816"]
+"src/tank_game/particles.py" = ["PLR0913", "PLR0917", "TC003"]
+"src/tank_game/tank.py" = ["ANN401"]
 
 [tool.pydoclint]
 exclude = ".git|.tox|.venv|build|dist|.uv-cache|.ruff_cache"

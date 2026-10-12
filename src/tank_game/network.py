@@ -17,10 +17,10 @@ def create_receiver_socket(
 
     Parameters
     ----------
-    mcast_grp : str, optional
-        Multicast group IP address, default is "224.1.1.1".
-    mcast_port : int, optional
-        UDP port number, default is 5007.
+    mcast_grp : str, default=DEFAULT_MCAST_GRP
+        Multicast group IP address.
+    mcast_port : int, default=DEFAULT_MCAST_PORT
+        UDP port number.
 
     Returns
     -------
@@ -41,8 +41,8 @@ def create_sender_socket(multicast_ttl: int = 2) -> socket.socket:
 
     Parameters
     ----------
-    multicast_ttl : int, optional
-        Time-to-live for multicast datagrams, default is 2.
+    multicast_ttl : int, default=2
+        Time-to-live for multicast datagrams.
 
     Returns
     -------
@@ -68,9 +68,9 @@ def send_json_message(
         Configured sender socket.
     payload : dict[str, Any]
         Dictionary to serialize into JSON and transmit.
-    mcast_grp : str, optional
+    mcast_grp : str, default=DEFAULT_MCAST_GRP
         Target multicast IP address.
-    mcast_port : int, optional
+    mcast_port : int, default=DEFAULT_MCAST_PORT
         Target port number.
     """
     raw_data = json.dumps(payload).encode("utf-8")
@@ -87,8 +87,8 @@ def receive_json_message(
     ----------
     sock : socket.socket
         Configured receiver socket.
-    buffer_size : int, optional
-        Maximum packet buffer size in bytes, default is 4096.
+    buffer_size : int, default=4096
+        Maximum packet buffer size in bytes.
 
     Returns
     -------

@@ -67,8 +67,8 @@ class AssetCache:
         ----------
         filename : str
             Path or basename of the image asset.
-        alpha : bool, optional
-            Whether to convert with per-pixel alpha transparency, default is True.
+        alpha : bool, default=True
+            Whether to convert with per-pixel alpha transparency.
 
         Returns
         -------
@@ -277,7 +277,8 @@ class TerrainSprite(BaseSprite):
         self.terrain: Terrain = terrain
         raw_img = AssetCache.get_image("grass_dirt_block.png", alpha=False)
         self.image: pygame.Surface = pygame.transform.scale(
-            raw_img, (terrain.width, terrain.height)
+            raw_img,
+            (terrain.width, terrain.height),
         )
         self.rect: pygame.Rect = self.image.get_rect()
         self.rect.topleft = (0, terrain.ypos)

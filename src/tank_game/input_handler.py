@@ -176,7 +176,8 @@ class InputHandler:
         }
 
     def update(
-        self, events: Sequence[bool] | pygame.key.ScancodeWrapper | Any
+        self,
+        events: Sequence[bool] | pygame.key.ScancodeWrapper | Any,
     ) -> dict[int, type[Command]]:
         """Map active key states to their respective command classes.
 
@@ -204,8 +205,8 @@ class InputHandler:
 
         Parameters
         ----------
-        local_player : bool, optional
-            Whether Player 1 is controlled locally, default is True.
+        local_player : bool, default=True
+            Whether Player 1 is controlled locally.
 
         Returns
         -------
@@ -229,8 +230,8 @@ class InputHandler:
 
         Parameters
         ----------
-        local_player : bool, optional
-            Whether Player 2 is controlled locally, default is True.
+        local_player : bool, default=True
+            Whether Player 2 is controlled locally.
 
         Returns
         -------

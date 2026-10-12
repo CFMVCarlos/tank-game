@@ -18,8 +18,8 @@ class Tank:
     ----------
     pos : tuple[int, int]
         Initial (x, y) coordinates on the battlefield.
-    controls : int, optional
-        Control scheme identifier (1 for Player 1, 2 for Player 2), default is 1.
+    controls : int, default=1
+        Control scheme identifier (1 for Player 1, 2 for Player 2).
     """
 
     def __init__(self, pos: tuple[int, int], controls: int = 1) -> None:
@@ -192,8 +192,8 @@ class Tank:
         ----------
         bullet_pos : tuple[int, int]
             Coordinates of projectile impact.
-        bullet_type : int, optional
-            Ammunition type identifier, default is 0.
+        bullet_type : int, default=0
+            Ammunition type identifier.
 
         Returns
         -------
