@@ -2,6 +2,9 @@
 
 import math
 from collections.abc import Sequence
+from typing import Any
+
+import pygame
 
 from tank_game.bullet import Bullet
 from tank_game.fsm import FSM, STATES, TRANSITIONS, Event
@@ -105,13 +108,13 @@ class Tank:
         """Discharge the tank bullet using current angle and power."""
         self.bullet.shoot(self.center_pos, self.bullet_angle, self.bullet_power)
 
-    def update(self, events: Sequence[bool]) -> bool:
+    def update(self, events: Sequence[bool] | pygame.key.ScancodeWrapper | Any) -> bool:
         """Process player inputs, update internal FSM, and trigger actions.
 
         Parameters
         ----------
-        events : Sequence[bool]
-            Key state booleans indexed by key scancode.
+        events : Sequence[bool] | pygame.key.ScancodeWrapper | Any
+            Key state booleans or ScancodeWrapper.
 
         Returns
         -------
@@ -125,13 +128,18 @@ class Tank:
             event = Event.IDLE
         elif self.health <= 0:
             event = Event.DESTROYED
-        else:
-            if self.current_player:
-                event = Event.MOVING
-            if any(issubclass(cmd, Shoot) for cmd in self.commands.values()):
+        elif self.bullet.shooting:
+            event = Event.RELOADING
+        elif self.current_player:
+            player_commands = {
+                k: cmd for k, cmd in self.commands.items() if k in self.get_controls()
+            }
+            if any(issubclass(cmd, Shoot) for cmd in player_commands.values()):
                 event = Event.FIRING
-            if self.bullet.shooting:
-                event = Event.RELOADING
+            else:
+                event = Event.MOVING
+        else:
+            event = Event.IDLE
 
         return self.fsm.update(event=event, actor=self)
 

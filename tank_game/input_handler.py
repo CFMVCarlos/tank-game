@@ -7,11 +7,11 @@ from typing import Any
 import pygame
 
 # Constants for action increments
-VALUE_ANGLE_LEFT: float = -0.01
+VALUE_ANGLE_LEFT: float = -0.03
 VALUE_ANGLE_RIGHT: float = -VALUE_ANGLE_LEFT
-VALUE_MOVE_LEFT: tuple[int, int] = (-1, 0)
-VALUE_MOVE_RIGHT: tuple[int, int] = (1, 0)
-VALUE_POWER_DOWN: float = -0.5
+VALUE_MOVE_LEFT: tuple[int, int] = (-3, 0)
+VALUE_MOVE_RIGHT: tuple[int, int] = (3, 0)
+VALUE_POWER_DOWN: float = -1.5
 VALUE_POWER_UP: float = -VALUE_POWER_DOWN
 
 
@@ -152,42 +152,52 @@ class InputHandler:
 
     def __init__(self) -> None:
         self.commands: dict[int, type[Command]] = {
-            # Player 1 controls (WASD + QE)
+            # Player 1 controls (WASD + QE + Space)
             pygame.K_q: AngleLeft,
             pygame.K_w: PowerUp,
             pygame.K_e: AngleRight,
             pygame.K_a: MoveLeft,
             pygame.K_s: PowerDown,
             pygame.K_d: MoveRight,
-            # Player 2 controls (IJKL + UO)
-            pygame.K_u: AngleLeft,
-            pygame.K_i: PowerUp,
-            pygame.K_o: AngleRight,
-            pygame.K_j: MoveLeft,
-            pygame.K_k: PowerDown,
-            pygame.K_l: MoveRight,
-            # Common fire key
             pygame.K_SPACE: Shoot,
+            # Player 2 controls (Arrow keys + UO / Power + Return)
+            pygame.K_LEFT: MoveLeft,
+            pygame.K_RIGHT: MoveRight,
+            pygame.K_UP: PowerUp,
+            pygame.K_DOWN: PowerDown,
+            pygame.K_u: AngleLeft,
+            pygame.K_o: AngleRight,
+            pygame.K_RETURN: Shoot,
+            # Player 2 alternative layout (IJKL)
+            pygame.K_j: MoveLeft,
+            pygame.K_l: MoveRight,
+            pygame.K_i: PowerUp,
+            pygame.K_k: PowerDown,
         }
 
-    def update(self, events: Sequence[bool]) -> dict[int, type[Command]]:
+    def update(
+        self, events: Sequence[bool] | pygame.key.ScancodeWrapper | Any
+    ) -> dict[int, type[Command]]:
         """Map active key states to their respective command classes.
 
         Parameters
         ----------
-        events : Sequence[bool]
-            Sequence indicating keypress states by scancode index.
+        events : Sequence[bool] | pygame.key.ScancodeWrapper | Any
+            Sequence or ScancodeWrapper indicating keypress states.
 
         Returns
         -------
         dict[int, type[Command]]
             Mapping of pressed key constants to Command classes.
         """
-        return {
-            key: cmd
-            for key, cmd in self.commands.items()
-            if key < len(events) and events[key]
-        }
+        active_commands: dict[int, type[Command]] = {}
+        for key, cmd in self.commands.items():
+            try:
+                if events[key]:
+                    active_commands[key] = cmd
+            except (IndexError, KeyError):
+                continue
+        return active_commands
 
     def get_controls_1(self, local_player: bool = True) -> list[int]:
         """Retrieve key codes assigned to Player 1.
@@ -210,6 +220,7 @@ class InputHandler:
                 pygame.K_a,
                 pygame.K_s,
                 pygame.K_d,
+                pygame.K_SPACE,
             ]
         return []
 
@@ -228,11 +239,16 @@ class InputHandler:
         """
         if local_player:
             return [
+                pygame.K_LEFT,
+                pygame.K_RIGHT,
+                pygame.K_UP,
+                pygame.K_DOWN,
                 pygame.K_u,
-                pygame.K_i,
                 pygame.K_o,
                 pygame.K_j,
-                pygame.K_k,
                 pygame.K_l,
+                pygame.K_i,
+                pygame.K_k,
+                pygame.K_RETURN,
             ]
         return []

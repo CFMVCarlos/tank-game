@@ -221,7 +221,7 @@ STATES: list[type[State]] = [Idle, Moving, Firing, Reloading, Destroyed]
 TRANSITIONS: dict[Event, list[Transition]] = {
     Event.IDLE: [Transition(Reloading, Idle)],
     Event.MOVING: [Transition(Idle, Moving)],
-    Event.FIRING: [Transition(Moving, Firing)],
+    Event.FIRING: [Transition(Moving, Firing), Transition(Idle, Firing)],
     Event.RELOADING: [Transition(Firing, Reloading)],
     Event.DESTROYED: [Transition(Idle, Destroyed)],
 }

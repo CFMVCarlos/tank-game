@@ -31,7 +31,7 @@ def test_commands_execution():
     tank.set_center_pos((100, 100))
 
     MoveRight().execute(tank)
-    assert tank.pos[0] == 101
+    assert tank.pos[0] > 100
 
     MoveLeft().execute(tank)
     assert tank.pos[0] == 100

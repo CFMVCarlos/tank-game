@@ -1,7 +1,6 @@
 """Tank Game launcher entrypoint."""
 
 import contextlib
-import sys
 
 import pygame
 
@@ -15,23 +14,8 @@ def run_launcher() -> None:
         with contextlib.suppress(pygame.error):
             pygame.mixer.init()
 
-    username = "Tank 1"
-    lan_mode = False
-
-    if sys.stdin.isatty():
-        try:
-            raw_name = input("Insert your name (default: Tank 1): ").strip()
-            if raw_name:
-                username = raw_name
-            raw_lan = input(
-                "Local or LAN game? (0 for Local, 1 for LAN, default 0): "
-            ).strip()
-            lan_mode = raw_lan == "1"
-        except (EOFError, KeyboardInterrupt):
-            pass
-
     try:
-        main(width=64, height=48, scale=10, username=username, lan_game=lan_mode)
+        main(width=64, height=48, scale=10, username="Tank 1", lan_game=False)
     finally:
         pygame.quit()
 

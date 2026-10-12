@@ -149,6 +149,105 @@ def draw_hud(
     screen.blit(stats_surf, stats_rect)
 
 
+def show_start_screen(
+    screen: pygame.Surface,
+    bg_surf: pygame.Surface,
+    clock: pygame.time.Clock,
+    title_font: pygame.font.Font,
+    font: pygame.font.Font,
+    sub_font: pygame.font.Font,
+    screen_w: int,
+    screen_h: int,
+) -> bool:
+    """Render start splash menu and wait for player to start or quit.
+
+    Parameters
+    ----------
+    screen : pygame.Surface
+        Display canvas.
+    bg_surf : pygame.Surface
+        Scaled sky background image.
+    clock : pygame.time.Clock
+        Frame rate limiter.
+    title_font : pygame.font.Font
+        Main title font.
+    font : pygame.font.Font
+        Standard menu font.
+    sub_font : pygame.font.Font
+        Subheading / control list font.
+    screen_w : int
+        Window width in pixels.
+    screen_h : int
+        Window height in pixels.
+
+    Returns
+    -------
+    bool
+        True to begin game; False if player quits.
+    """
+    pulse_frame = 0
+    waiting = True
+    while waiting:
+        pulse_frame += 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
+                return False
+            if event.type in {pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN}:
+                return True
+
+        screen.blit(bg_surf, (0, 0))
+
+        # Semi-transparent overlay panel
+        panel_w, panel_h = min(560, screen_w - 40), min(420, screen_h - 40)
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        panel.fill((15, 20, 30, 225))
+        pygame.draw.rect(
+            panel, colors.GOLD, panel.get_rect(), width=2, border_radius=12
+        )
+        screen.blit(panel, ((screen_w - panel_w) // 2, (screen_h - panel_h) // 2))
+
+        # Title banner
+        title_surf = title_font.render("TANKS ARCADE", True, colors.GOLD)
+        title_rect = title_surf.get_rect(center=(screen_w // 2, screen_h // 2 - 140))
+        screen.blit(title_surf, title_rect)
+
+        sub_surf = font.render("Ballistic Artillery Combat", True, colors.SKY_BLUE)
+        sub_rect = sub_surf.get_rect(center=(screen_w // 2, screen_h // 2 - 100))
+        screen.blit(sub_surf, sub_rect)
+
+        # Controls reference guide
+        ctrl_lines = [
+            ("PLAYER 1 CONTROLS", colors.GOLD),
+            ("Move: A / D    |    Aim: Q / E    |    Power: W / S", colors.WHITE),
+            ("Fire: SPACE", colors.LIGHT_GRAY),
+            ("", colors.WHITE),
+            ("PLAYER 2 CONTROLS", colors.SKY_BLUE),
+            ("Move: ← / →    |    Aim: U / O    |    Power: ↑ / ↓", colors.WHITE),
+            ("Fire: ENTER", colors.LIGHT_GRAY),
+        ]
+
+        y_offset = screen_h // 2 - 50
+        for text, color in ctrl_lines:
+            if text:
+                line_surf = sub_font.render(text, True, color)
+                line_rect = line_surf.get_rect(center=(screen_w // 2, y_offset))
+                screen.blit(line_surf, line_rect)
+            y_offset += 24
+
+        # Pulsing prompt
+        prompt_color = colors.GOLD if (pulse_frame // 30) % 2 == 0 else colors.WHITE
+        prompt_surf = font.render("PRESS ANY KEY OR CLICK TO START", True, prompt_color)
+        prompt_rect = prompt_surf.get_rect(center=(screen_w // 2, screen_h // 2 + 155))
+        screen.blit(prompt_surf, prompt_rect)
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    return True
+
+
 def run_game(
     width: int = 64,
     height: int = 48,
@@ -156,6 +255,7 @@ def run_game(
     username: str = "Tank 1",
     lan_game: bool = False,
     max_frames: int | None = None,
+    show_menu: bool = True,
 ) -> bool:
     """Execute the core tank battle game loop.
 
@@ -173,6 +273,8 @@ def run_game(
         Enable UDP multicast LAN synchronization, default is False.
     max_frames : int | None
         Optional maximum frame limit for headless/test executions.
+    show_menu : bool, optional
+        Display interactive title start screen before combat, default is True.
 
     Returns
     -------
@@ -190,8 +292,27 @@ def run_game(
 
     clock = pygame.time.Clock()
     particles = ParticleManager()
-    font = pygame.font.SysFont("Verdana", max(12, 14 * scale // 10))
+    title_font = pygame.font.SysFont("Verdana", max(22, 26 * scale // 10), bold=True)
+    font = pygame.font.SysFont("Verdana", max(12, 14 * scale // 10), bold=True)
+    sub_font = pygame.font.SysFont("Verdana", max(10, 11 * scale // 10))
     hud_font = pygame.font.SysFont("Verdana", max(10, 11 * scale // 10), bold=True)
+
+    # Show start screen if enabled (disabled in headless automated tests)
+    if (
+        show_menu
+        and max_frames is None
+        and not show_start_screen(
+            screen=screen,
+            bg_surf=bg_surf,
+            clock=clock,
+            title_font=title_font,
+            font=font,
+            sub_font=sub_font,
+            screen_w=screen_w,
+            screen_h=screen_h,
+        )
+    ):
+        return True
 
     # Spawning tanks
     tank_base = Tank((-10, -10), controls=1)
@@ -265,14 +386,18 @@ def run_game(
                     {"user": username, "user_id": user_id, "keys": active_keys},
                 )
 
-        combined_keys = list(keys_pressed)
-        for k in remote_keys:
-            if k < len(combined_keys):
-                combined_keys[k] = True
+        # Merge local keyboard state and remote network events
+        if remote_keys:
+            key_source = dict.fromkeys(remote_keys, True)
+            for k, val in enumerate(keys_pressed):
+                if val:
+                    key_source[k] = True
+        else:
+            key_source = keys_pressed
 
         # Update entities
-        tank1.update(combined_keys)
-        tank2.update(combined_keys)
+        tank1.update(key_source)
+        tank2.update(key_source)
 
         # Bullet spark trails during active flight
         if tank1.bullet.shooting:
