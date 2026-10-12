@@ -1,0 +1,238 @@
+"""Input handling and Command pattern implementations for player actions."""
+
+from abc import ABC, abstractmethod
+from collections.abc import Sequence
+from typing import Any
+
+import pygame
+
+# Constants for action increments
+VALUE_ANGLE_LEFT: float = -0.01
+VALUE_ANGLE_RIGHT: float = -VALUE_ANGLE_LEFT
+VALUE_MOVE_LEFT: tuple[int, int] = (-1, 0)
+VALUE_MOVE_RIGHT: tuple[int, int] = (1, 0)
+VALUE_POWER_DOWN: float = -0.5
+VALUE_POWER_UP: float = -VALUE_POWER_DOWN
+
+
+class Command(ABC):
+    """Abstract base class representing an executable input command."""
+
+    def __init__(self) -> None:
+        self.actor: Any = None
+
+    @abstractmethod
+    def execute(self, actor: Any) -> None:
+        """Execute the command on the target actor.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity on which to execute this command.
+        """
+
+
+class AngleLeft(Command):
+    """Adjust turret aim angle counter-clockwise."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute angle decrease.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity adjusting angle.
+        """
+        self.actor = actor
+        actor.set_angle(VALUE_ANGLE_LEFT)
+
+
+class AngleRight(Command):
+    """Adjust turret aim angle clockwise."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute angle increase.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity adjusting angle.
+        """
+        self.actor = actor
+        actor.set_angle(VALUE_ANGLE_RIGHT)
+
+
+class PowerDown(Command):
+    """Decrease firing shot velocity."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute power decrease.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity decreasing power.
+        """
+        self.actor = actor
+        actor.set_power(VALUE_POWER_DOWN)
+
+
+class PowerUp(Command):
+    """Increase firing shot velocity."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute power increase.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity increasing power.
+        """
+        self.actor = actor
+        actor.set_power(VALUE_POWER_UP)
+
+
+class MoveLeft(Command):
+    """Translate tank position to the left."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute leftward translation.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity moving left.
+        """
+        self.actor = actor
+        actor.move(VALUE_MOVE_LEFT)
+
+
+class MoveRight(Command):
+    """Translate tank position to the right."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute rightward translation.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity moving right.
+        """
+        self.actor = actor
+        actor.move(VALUE_MOVE_RIGHT)
+
+
+class Shoot(Command):
+    """Trigger bullet launch."""
+
+    def execute(self, actor: Any) -> None:
+        """Execute projectile firing.
+
+        Parameters
+        ----------
+        actor : Any
+            The entity firing a projectile.
+        """
+        self.actor = actor
+        actor.shoot()
+
+
+# Backward-compatible aliases
+ANGLE_LEFT = AngleLeft
+ANGLE_RIGHT = AngleRight
+POWER_DOWN = PowerDown
+POWER_UP = PowerUp
+MOVE_LEFT = MoveLeft
+MOVE_RIGHT = MoveRight
+SHOOT = Shoot
+
+
+class InputHandler:
+    """Dispatches keyboard inputs to appropriate action commands."""
+
+    def __init__(self) -> None:
+        self.commands: dict[int, type[Command]] = {
+            # Player 1 controls (WASD + QE)
+            pygame.K_q: AngleLeft,
+            pygame.K_w: PowerUp,
+            pygame.K_e: AngleRight,
+            pygame.K_a: MoveLeft,
+            pygame.K_s: PowerDown,
+            pygame.K_d: MoveRight,
+            # Player 2 controls (IJKL + UO)
+            pygame.K_u: AngleLeft,
+            pygame.K_i: PowerUp,
+            pygame.K_o: AngleRight,
+            pygame.K_j: MoveLeft,
+            pygame.K_k: PowerDown,
+            pygame.K_l: MoveRight,
+            # Common fire key
+            pygame.K_SPACE: Shoot,
+        }
+
+    def update(self, events: Sequence[bool]) -> dict[int, type[Command]]:
+        """Map active key states to their respective command classes.
+
+        Parameters
+        ----------
+        events : Sequence[bool]
+            Sequence indicating keypress states by scancode index.
+
+        Returns
+        -------
+        dict[int, type[Command]]
+            Mapping of pressed key constants to Command classes.
+        """
+        return {
+            key: cmd
+            for key, cmd in self.commands.items()
+            if key < len(events) and events[key]
+        }
+
+    def get_controls_1(self, local_player: bool = True) -> list[int]:
+        """Retrieve key codes assigned to Player 1.
+
+        Parameters
+        ----------
+        local_player : bool, optional
+            Whether Player 1 is controlled locally, default is True.
+
+        Returns
+        -------
+        list[int]
+            List of key scancodes for Player 1.
+        """
+        if local_player:
+            return [
+                pygame.K_q,
+                pygame.K_w,
+                pygame.K_e,
+                pygame.K_a,
+                pygame.K_s,
+                pygame.K_d,
+            ]
+        return []
+
+    def get_controls_2(self, local_player: bool = True) -> list[int]:
+        """Retrieve key codes assigned to Player 2.
+
+        Parameters
+        ----------
+        local_player : bool, optional
+            Whether Player 2 is controlled locally, default is True.
+
+        Returns
+        -------
+        list[int]
+            List of key scancodes for Player 2.
+        """
+        if local_player:
+            return [
+                pygame.K_u,
+                pygame.K_i,
+                pygame.K_o,
+                pygame.K_j,
+                pygame.K_k,
+                pygame.K_l,
+            ]
+        return []

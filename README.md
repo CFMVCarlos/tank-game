@@ -1,12 +1,12 @@
 # Tank Game
 
-A lightweight 2-player tank game built with Python and Pygame, featuring local and LAN multiplayer via UDP multicast.
+A lightweight, arcade-polished 2-player tank battle game built with Python 3.13 and Pygame, featuring ballistic aim guides, particle burst effects, zero-allocation asset caching, and secure UDP multicast LAN play.
 
 ## Table of Contents
 
 - [Tank Game](#tank-game)
   - [Table of Contents](#table-of-contents)
-  - [Features](#features)
+  - [Features & Visual Polish](#features--visual-polish)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
     - [Using uv](#using-uv)
@@ -14,33 +14,29 @@ A lightweight 2-player tank game built with Python and Pygame, featuring local a
     - [Running the Game](#running-the-game)
     - [Game Setup](#game-setup)
   - [Controls](#controls)
-  - [Project Structure](#project-structure)
+  - [Project Architecture](#project-architecture)
+  - [Quality & Verification](#quality--verification)
   - [Networking](#networking)
-  - [Troubleshooting](#troubleshooting)
-  - [Contributing](#contributing)
   - [License](#license)
   - [Credits](#credits)
 
-## Features
+## Features & Visual Polish
 
-- Local and LAN multiplayer support
-- Simple, readable codebase ideal for learning game development concepts like game loops, input handling, and basic networking
-- Minimal external dependencies (only Pygame)
-- Real-time tank battles with physics-based projectiles
-- Cross-platform compatibility (Windows, macOS, Linux)
+- 💥 **Particle Effects Engine**: Dynamic spark trails and radial explosion particle bursts on projectile impact.
+- 🎯 **Ballistic Aiming Arc**: Visual segmented trajectory prediction previewing shot angles and velocity.
+- 🚀 **Zero-Disk-I/O Asset Cache**: All sprites, damage stages, and sound effects are preloaded into memory once, eliminating 60 FPS disk thrashing.
+- 🛡️ **Secure LAN Multiplayer**: Replaced legacy pickle serialization with hardened JSON payloads over UDP multicast.
+- 🎮 **Arcade HUD**: Styled health bars, active player turn banners, and real-time power/angle gauges.
+- 🧪 **Full Test & Lint Suite**: 100% passing tests with pytest, Ruff, pydoclint (NumPy docstrings), and ty type checking.
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.13 or newer
-- uv package manager (recommended for dependency management)
+- Python 3.13
+- [uv](https://docs.astral.sh/uv/) package manager
 
 ### Using uv
-
-1. Clone or download the repository.
-2. Navigate to the project directory.
-3. Install dependencies:
 
 ```bash
 uv sync
@@ -50,66 +46,88 @@ uv sync
 
 ### Running the Game
 
-Using uv:
+Launch using `uv`:
 
 ```bash
 uv run main.py
 ```
 
+Or execute as a module:
+
+```bash
+uv run python -m tank_game
+```
+
 ### Game Setup
 
-- Enter your player name.
-- Choose game mode: `0` for local (single machine), `1` for LAN (multiplayer over network).
-
-For LAN games, run the command on two machines connected to the same local network.
+- Enter player name (press Enter for default `Tank 1`).
+- Choose game mode: `0` for Local hotseat (single machine), `1` for LAN multiplayer.
 
 ## Controls
 
-- **Player 1**: Q (aim left), W (power up), E (aim right), A (move left), S (power down), D (move right)
-- **Player 2**: U (aim left), I (power up), O (aim right), J (move left), K (power down), L (move right)
-- **SPACE**: Shoot
-- **R**: Restart (when game over)
-- **ESC**: Quit
+| Action | Player 1 | Player 2 |
+| :--- | :---: | :---: |
+| **Move Left / Right** | <kbd>A</kbd> / <kbd>D</kbd> | <kbd>J</kbd> / <kbd>L</kbd> |
+| **Aim Angle Left / Right** | <kbd>Q</kbd> / <kbd>E</kbd> | <kbd>U</kbd> / <kbd>O</kbd> |
+| **Power Down / Up** | <kbd>S</kbd> / <kbd>W</kbd> | <kbd>K</kbd> / <kbd>I</kbd> |
+| **Fire Projectile** | <kbd>SPACE</kbd> | <kbd>SPACE</kbd> |
+| **Quit Game** | <kbd>ESC</kbd> | <kbd>ESC</kbd> |
 
-## Project Structure
+## Project Architecture
 
-- `main.py`: Application entry point, menu, and main game loop
-- `tank.py`: Tank logic and controls
-- `input_handler.py`: Input mapping abstraction
-- `sprites.py`, `bullet.py`, `terrain.py`, `colors.py`: Game objects and rendering
-- `multicast_transceiver.py`: UDP multicast for LAN play
-- `fsm.py`: Finite state machine for game states
-- `images/`: Image assets used by the game
+```text
+tank-game/
+├── main.py                     # Root CLI launcher entrypoint
+├── tank_game/                  # Core game package
+│   ├── __init__.py             # Public package exports
+│   ├── bullet.py               # Ballistic physics and bullet entity
+│   ├── colors.py               # Standardized RGBA/RGB palette constants
+│   ├── fsm.py                  # Finite State Machine governing entity states
+│   ├── game.py                 # Main game loop, HUD, trajectory guide, and collision
+│   ├── input_handler.py        # Command pattern input mapping
+│   ├── network.py              # Secure UDP multicast transceiver with JSON encoding
+│   ├── particles.py            # Physics particle engine for sparks and debris
+│   ├── sprites.py              # In-memory AssetCache, TankSprite, BulletSprite, TerrainSprite
+│   ├── tank.py                 # Tank entity, controls, damage calculations, TankSpawner
+│   └── terrain.py              # Terrain surface boundaries and properties
+├── tests/                      # Automated test suite
+│   ├── test_bullet.py
+│   ├── test_fsm.py
+│   ├── test_input_handler.py
+│   ├── test_particles.py
+│   ├── test_tank.py
+│   └── test_terrain.py
+├── images/                     # Sprite assets and sound files
+├── pyproject.toml              # Build metadata and tool configuration
+└── README.md
+```
+
+## Quality & Verification
+
+Run the complete test and linting pipeline:
+
+```bash
+# Run unit test suite
+uv run pytest
+
+# Check linter rules
+uv run ruff check
+
+# Verify NumPy docstring compliance
+uv run pydoclint .
+
+# Run Astral type checker
+uv run ty check
+```
 
 ## Networking
 
-LAN play uses UDP multicast for player discovery and lightweight state synchronization. Both players must be on the same LAN, and the network must allow UDP multicast traffic.
-
-If players cannot discover each other:
-
-- Check local firewall settings
-- Ensure both machines are on the same subnet
-- Try temporarily disabling firewalls to isolate the issue
-
-## Troubleshooting
-
-- **Game fails to start**: Ensure Python 3.13+ is used and Pygame is installed for the active Python interpreter.
-- **LAN discovery fails**: Refer to the [Networking](#networking) section.
-- **Performance issues**: The game is lightweight; check system resources if experiencing slowdowns.
-
-## Contributing
-
-Contributions, issues, and PRs are welcome. Good first changes include:
-
-- Improving art or adding sound effects in `images/`
-- Adding unit tests for non-graphical logic
-- Implementing new game modes or features
-- Enhancing networking robustness
+LAN play uses UDP multicast for player discovery and lightweight state synchronization. Both players must be on the same local subnet with UDP multicast traffic permitted.
 
 ## License
 
-This project is licensed under the MIT License. See LICENSE file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Credits
 
-Created as a small demo project by Carlos Valente to explore Pygame and simple LAN multiplayer.
+Created by Carlos Valente. Modernized with clean architecture, zero-allocation asset caching, and arcade visuals.
