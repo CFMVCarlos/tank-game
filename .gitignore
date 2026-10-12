@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# uv and ruff cache
+.ruff_cache/
+.uv-cache/
+
+# IDE artifacts
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
